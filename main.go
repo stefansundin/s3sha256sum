@@ -26,11 +26,9 @@ func init() {
 }
 
 func main() {
-	var profile, bucket, key string
+	var profile string
 	var versionFlag bool
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
-	flag.StringVar(&bucket, "bucket", "", "Bucket name.")
-	flag.StringVar(&key, "key", "", "Object key name.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Parse()
 
@@ -38,9 +36,14 @@ func main() {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(0)
+	}
 
+	bucket, key := parseS3Uri(flag.Arg(0))
 	if bucket == "" || key == "" {
-		fmt.Println("-bucket and -key are required!")
+		fmt.Fprintln(os.Stderr, "Error: The S3Uri must have the format s3://<bucketname>/<key>")
 		os.Exit(1)
 	}
 
