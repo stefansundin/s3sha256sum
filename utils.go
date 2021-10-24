@@ -45,8 +45,11 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(profile, encodedState, bucket, key string) string {
+func formatResumeCommand(verboseFlag bool, profile, encodedState, bucket, key string) string {
 	cmd := []string{os.Args[0]}
+	if verboseFlag {
+		cmd = append(cmd, "-verbose")
+	}
 	if profile != "" {
 		cmd = append(cmd, "-profile", profile)
 	}

@@ -31,9 +31,10 @@ func init() {
 
 func main() {
 	var profile, resume string
-	var versionFlag bool
+	var verboseFlag, versionFlag bool
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
+	flag.BoolVar(&verboseFlag, "verbose", false, "Verbose output.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "s3sha256sum version %s\n", version)
@@ -82,6 +83,7 @@ func main() {
 		}
 		position = hashGetLen(h)
 		fmt.Printf("Resuming from position %s.\n", formatFilesize(position))
+		fmt.Println()
 	}
 
 	// Trap Ctrl-C signal
@@ -152,6 +154,9 @@ func main() {
 		})
 
 		// Get the object
+		if verboseFlag {
+			fmt.Printf("Getting s3://%s/%s\n", bucket, key)
+		}
 		input := &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
@@ -183,7 +188,7 @@ func main() {
 				fmt.Printf("Aborted after %s.\n", formatFilesize(position))
 				fmt.Println()
 				fmt.Println("To resume hashing from this position, run:")
-				fmt.Println(formatResumeCommand(profile, encodedState, bucket, key))
+				fmt.Println(formatResumeCommand(verboseFlag, profile, encodedState, bucket, key))
 				fmt.Println()
 				fmt.Println("Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
