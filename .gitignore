@@ -1,0 +1,9 @@
+Thumbs.db
+*.DS_Store
+*.swp
+*.ucf-dist
+.~lock.*
+
+/vendor
+s3sha256sum
+SHA256SUMS
