@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
+	"hash"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,9 +30,10 @@ func init() {
 }
 
 func main() {
-	var profile string
+	var profile, resume string
 	var versionFlag bool
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
+	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "s3sha256sum version %s\n", version)
@@ -56,6 +61,48 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Decode the resume state
+	var h hash.Hash
+	var position uint64
+	if resume != "" {
+		if flag.NArg() > 1 {
+			fmt.Fprintln(os.Stderr, "You can only resume hashing a single object.")
+			os.Exit(1)
+		}
+		state, err := base64.StdEncoding.DecodeString(resume)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		h = sha256.New()
+		err = hashUnmarshalBinary(&h, state)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		position = hashGetLen(h)
+		fmt.Printf("Resuming from position %s.\n", formatFilesize(position))
+	}
+
+	// Trap Ctrl-C signal
+	ctx, cancel := context.WithCancel(context.Background())
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, os.Interrupt)
+	go func() {
+		interrupted := false
+		for sig := range signalChannel {
+			if sig != os.Interrupt {
+				continue
+			}
+			if interrupted {
+				os.Exit(1)
+			}
+			fmt.Println("\nInterrupt received.")
+			interrupted = true
+			cancel()
+		}
+	}()
+
 	// Initialize the AWS SDK
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
@@ -72,9 +119,10 @@ func main() {
 	}
 	client := s3.NewFromConfig(cfg)
 
-	// Cache the bucket location to avoid extra calls
+	// Cache bucket locations to avoid extra calls
 	bucketLocations := make(map[string]string)
 
+	// Loop the provided arguments
 	for i, arg := range flag.Args() {
 		if i != 0 {
 			fmt.Println()
@@ -109,24 +157,48 @@ func main() {
 		})
 
 		// Get the object
-		obj, err := regionalClient.GetObject(context.TODO(), &s3.GetObjectInput{
+		input := &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
-		})
+		}
+		if position != 0 {
+			input.Range = aws.String(fmt.Sprintf("bytes=%d-", position))
+		}
+		obj, err := regionalClient.GetObject(ctx, input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
-		// Compute and print the sha256 hash
+		// Compute the sha256 hash
 		// The body is streamed so it is computing while the object is being downloaded
-		hash := sha256.New()
-		_, err = io.Copy(hash, obj.Body)
+		if resume == "" {
+			h = sha256.New()
+		}
+		_, err = io.Copy(h, obj.Body)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			if errors.Is(err, context.Canceled) {
+				state, err := hashMarshalBinary(h)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+				encodedState := base64.StdEncoding.EncodeToString(state)
+				position = hashGetLen(h)
+				fmt.Printf("Aborted after %s.\n", formatFilesize(position))
+				fmt.Println()
+				fmt.Println("To resume hashing from this position, run:")
+				fmt.Println(formatResumeCommand(profile, encodedState, bucket, key))
+				fmt.Println()
+				fmt.Println("Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
+			} else {
+				fmt.Fprintln(os.Stderr, err)
+			}
 			os.Exit(1)
 		}
-		sum := hex.EncodeToString(hash.Sum(nil))
+
+		// Print the sum
+		sum := hex.EncodeToString(h.Sum(nil))
 		fmt.Printf("%s  s3://%s/%s\n", sum, bucket, key)
 		fmt.Println()
 
