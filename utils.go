@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
@@ -45,10 +46,13 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(verboseFlag bool, profile, encodedState, bucket, key string) string {
+func formatResumeCommand(verboseFlag bool, paranoidInterval time.Duration, profile, encodedState, bucket, key string) string {
 	cmd := []string{os.Args[0]}
 	if verboseFlag {
 		cmd = append(cmd, "-verbose")
+	}
+	if paranoidInterval != 0 {
+		cmd = append(cmd, "-paranoid", fmt.Sprint(paranoidInterval))
 	}
 	if profile != "" {
 		cmd = append(cmd, "-profile", profile)
@@ -58,15 +62,21 @@ func formatResumeCommand(verboseFlag bool, profile, encodedState, bucket, key st
 	return strings.Join(cmd, " ")
 }
 
+// Internal hash state:
+// https://github.com/golang/go/blob/go1.17/src/crypto/sha256/sha256.go#L50-L57
+
 func hashGetLen(h hash.Hash) uint64 {
+	if h == nil {
+		return 0
+	}
 	s := reflect.ValueOf(h).Elem()
 	return s.FieldByName("len").Uint()
 }
 
-// Internal hash state:
-// https://github.com/golang/go/blob/go1.17/src/crypto/sha256/sha256.go#L50-L57
-
 func hashMarshalBinary(h hash.Hash) ([]byte, error) {
+	if h == nil {
+		return nil, nil
+	}
 	var b []byte
 	var err error
 	v := reflect.ValueOf(h).MethodByName("MarshalBinary").Call([]reflect.Value{})

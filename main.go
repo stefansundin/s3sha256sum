@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -30,8 +31,10 @@ func init() {
 }
 
 func main() {
+	var paranoidInterval time.Duration
 	var profile, resume string
 	var verboseFlag, versionFlag bool
+	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.BoolVar(&verboseFlag, "verbose", false, "Verbose output.")
@@ -86,6 +89,37 @@ func main() {
 		fmt.Println()
 	}
 
+	// If paranoid, start the go routine that runs in the background
+	// This feels a bit unsafe but haven't had any problems in my testing
+	var bucket, key string
+	copying := false
+	if paranoidInterval != 0 {
+		go func() {
+			lastPosition := position
+			for {
+				time.Sleep(paranoidInterval)
+				if !copying {
+					continue
+				}
+				position := hashGetLen(h)
+				if position == 0 || position == lastPosition {
+					continue
+				}
+				lastPosition = position
+				state, err := hashMarshalBinary(h)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+				if state == nil {
+					continue
+				}
+				encodedState := base64.StdEncoding.EncodeToString(state)
+				fmt.Printf("To resume hashing from %s, run: %s\n", formatFilesize(position), formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
+			}
+		}()
+	}
+
 	// Trap Ctrl-C signal
 	ctx, cancel := context.WithCancel(context.Background())
 	signalChannel := make(chan os.Signal, 1)
@@ -130,7 +164,7 @@ func main() {
 			fmt.Println()
 		}
 
-		bucket, key := parseS3Uri(arg)
+		bucket, key = parseS3Uri(arg)
 		if bucket == "" || key == "" {
 			fmt.Fprintln(os.Stderr, "Error: The S3Uri must have the format s3://<bucketname>/<key>")
 			os.Exit(1)
@@ -175,7 +209,9 @@ func main() {
 		if resume == "" {
 			h = sha256.New()
 		}
+		copying = true
 		_, err = io.Copy(h, obj.Body)
+		copying = false
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				state, err := hashMarshalBinary(h)
@@ -184,17 +220,20 @@ func main() {
 					os.Exit(1)
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				position = hashGetLen(h)
+				position := hashGetLen(h)
 				fmt.Printf("Aborted after %s.\n", formatFilesize(position))
 				fmt.Println()
 				fmt.Println("To resume hashing from this position, run:")
-				fmt.Println(formatResumeCommand(verboseFlag, profile, encodedState, bucket, key))
+				fmt.Println(formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
 				fmt.Println()
 				fmt.Println("Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
 				fmt.Fprintln(os.Stderr, err)
 			}
 			os.Exit(1)
+		}
+		if paranoidInterval != 0 || verboseFlag {
+			fmt.Println()
 		}
 
 		// Print the sum
