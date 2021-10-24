@@ -30,6 +30,21 @@ func main() {
 	var versionFlag bool
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "s3sha256sum version %s\n", version)
+		fmt.Fprintln(os.Stderr, "Copyright (C) 2021 Stefan Sundin")
+		fmt.Fprintln(os.Stderr, "Website: https://github.com/stefansundin/s3sha256sum")
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, "s3sha256sum comes with ABSOLUTELY NO WARRANTY.")
+		fmt.Fprintln(os.Stderr, "This is free software, and you are welcome to redistribute it under certain")
+		fmt.Fprintln(os.Stderr, "conditions. See the GNU General Public Licence version 3 for details.")
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintf(os.Stderr, "Usage: %s [parameters] <S3Uri> [S3Uri]...\n", os.Args[0])
+		fmt.Fprintln(os.Stderr, "S3Uri must have the format s3://<bucketname>/<key>.")
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, "Parameters:")
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	if versionFlag {
