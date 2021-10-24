@@ -143,12 +143,7 @@ func main() {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			bucketRegion := string(bucketLocationOutput.LocationConstraint)
-			if bucketRegion == "" {
-				// This can be updated when aws-sdk-go-v2 supports GetBucketLocation WithNormalizeBucketLocation
-				bucketRegion = "us-east-1"
-			}
-			bucketLocations[bucket] = bucketRegion
+			bucketLocations[bucket] = normalizeBucketLocation(bucketLocationOutput.LocationConstraint)
 		}
 
 		// Create an S3 client for the region
