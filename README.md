@@ -24,6 +24,12 @@ Usage: s3sha256sum [parameters] <S3Uri> [S3Uri]...
 S3Uri must have the format s3://<bucketname>/<key>.
 
 Parameters:
+  -ca-bundle string
+    	The CA certificate bundle to use when verifying SSL certificates.
+  -endpoint-url string
+    	Override the S3 endpoint URL (for use with S3 compatible APIs).
+  -no-verify-ssl
+    	Do not verify SSL certificates.
   -paranoid duration
     	Print status and hash state on an interval. (e.g. "10s")
   -profile string

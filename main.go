@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -33,11 +35,14 @@ func init() {
 
 func main() {
 	var paranoidInterval time.Duration
-	var profile, resume string
-	var verboseFlag, versionFlag bool
+	var profile, resume, endpointURL, caBundle string
+	var noVerifySsl, verboseFlag, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
+	flag.StringVar(&endpointURL, "endpoint-url", "", "Override the S3 endpoint URL (for use with S3 compatible APIs).")
+	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
+	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
 	flag.BoolVar(&verboseFlag, "verbose", false, "Verbose output.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Usage = func() {
@@ -148,6 +153,18 @@ func main() {
 			if profile != "" {
 				o.SharedConfigProfile = profile
 			}
+			if caBundle != "" {
+				f, err := os.Open(caBundle)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+				o.CustomCABundle = f
+			}
+			if noVerifySsl {
+				o.HTTPClient = &http.Client{Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+			}
 			return nil
 		},
 		config.WithAssumeRoleCredentialOptions(func(o *stscreds.AssumeRoleOptions) {
@@ -158,7 +175,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	client := s3.NewFromConfig(cfg)
+	client := s3.NewFromConfig(cfg,
+		func(o *s3.Options) {
+			if endpointURL != "" {
+				o.EndpointResolver = s3.EndpointResolverFromURL(endpointURL)
+				o.UsePathStyle = true
+			}
+		})
 
 	// Cache bucket locations to avoid extra calls
 	bucketLocations := make(map[string]string)
@@ -175,22 +198,24 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Get the bucket location
-		if bucketLocations[bucket] == "" {
-			bucketLocationOutput, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-				Bucket: aws.String(bucket),
-			})
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-			bucketLocations[bucket] = normalizeBucketLocation(bucketLocationOutput.LocationConstraint)
-		}
-
 		// Create an S3 client for the region
-		regionalClient := s3.NewFromConfig(cfg, func(o *s3.Options) {
-			o.Region = bucketLocations[bucket]
-		})
+		regionalClient := client
+		if endpointURL == "" {
+			// Get the bucket location
+			if bucketLocations[bucket] == "" {
+				bucketLocationOutput, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
+					Bucket: aws.String(bucket),
+				})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+				bucketLocations[bucket] = normalizeBucketLocation(bucketLocationOutput.LocationConstraint)
+			}
+			regionalClient = s3.NewFromConfig(cfg, func(o *s3.Options) {
+				o.Region = bucketLocations[bucket]
+			})
+		}
 
 		// Get the object
 		if verboseFlag {
