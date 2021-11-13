@@ -45,3 +45,18 @@ Parameters:
   -version
     	Print version number.
 ```
+
+You can also set environment variables that [aws-sdk-go-v2](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/config#EnvConfig) automatically consumes:
+
+```
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_SESSION_TOKEN
+AWS_ROLE_ARN
+AWS_ROLE_SESSION_NAME
+AWS_REGION
+AWS_PROFILE
+AWS_SHARED_CREDENTIALS_FILE
+AWS_CONFIG_FILE
+AWS_CA_BUNDLE
+```
