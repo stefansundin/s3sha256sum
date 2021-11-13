@@ -143,7 +143,7 @@ func main() {
 
 	// Initialize the AWS SDK
 	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
+		ctx,
 		func(o *config.LoadOptions) error {
 			if profile != "" {
 				o.SharedConfigProfile = profile
@@ -177,7 +177,7 @@ func main() {
 
 		// Get the bucket location
 		if bucketLocations[bucket] == "" {
-			bucketLocationOutput, err := client.GetBucketLocation(context.TODO(), &s3.GetBucketLocationInput{
+			bucketLocationOutput, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
 				Bucket: aws.String(bucket),
 			})
 			if err != nil {
@@ -251,7 +251,7 @@ func main() {
 		objSumSource := "metadata"
 		if objSum == "" && obj.TagCount > 0 {
 			// No metadata entry, check if there's a tag
-			tags, err := regionalClient.GetObjectTagging(context.TODO(), &s3.GetObjectTaggingInput{
+			tags, err := regionalClient.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{
 				Bucket: aws.String(bucket),
 				Key:    aws.String(key),
 			})
