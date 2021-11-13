@@ -92,6 +92,7 @@ func main() {
 	// If paranoid, start the go routine that runs in the background
 	// This feels a bit unsafe but haven't had any problems in my testing
 	var bucket, key string
+	var obj *s3.GetObjectOutput
 	copying := false
 	if paranoidInterval != 0 {
 		go func() {
@@ -115,7 +116,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Printf("To resume hashing from %s, run: %s\n", formatFilesize(position), formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
+				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength), formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
 			}
 		}()
 	}
@@ -198,7 +199,7 @@ func main() {
 		if position != 0 {
 			input.Range = aws.String(fmt.Sprintf("bytes=%d-", position))
 		}
-		obj, err := regionalClient.GetObject(ctx, input)
+		obj, err = regionalClient.GetObject(ctx, input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -221,7 +222,7 @@ func main() {
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
 				position := hashGetLen(h)
-				fmt.Printf("Aborted after %s.\n", formatFilesize(position))
+				fmt.Printf("Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength))
 				fmt.Println()
 				fmt.Println("To resume hashing from this position, run:")
 				fmt.Println(formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
