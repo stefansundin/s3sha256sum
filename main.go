@@ -36,14 +36,14 @@ func init() {
 func main() {
 	var paranoidInterval time.Duration
 	var profile, resume, endpointURL, caBundle string
-	var noVerifySsl, verboseFlag, versionFlag bool
+	var noVerifySsl, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.StringVar(&endpointURL, "endpoint-url", "", "Override the S3 endpoint URL (for use with S3 compatible APIs).")
 	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
 	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
-	flag.BoolVar(&verboseFlag, "verbose", false, "Verbose output.")
+	flag.BoolVar(&verbose, "verbose", false, "Verbose output.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "s3sha256sum version %s\n", version)
@@ -122,7 +122,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength), formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
+				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength), formatResumeCommand(verbose, paranoidInterval, profile, encodedState, bucket, key))
 			}
 		}()
 	}
@@ -218,7 +218,7 @@ func main() {
 		}
 
 		// Get the object
-		if verboseFlag {
+		if verbose {
 			fmt.Printf("Getting s3://%s/%s\n", bucket, key)
 		}
 		input := &s3.GetObjectInput{
@@ -254,7 +254,7 @@ func main() {
 				fmt.Printf("Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength))
 				fmt.Println()
 				fmt.Println("To resume hashing from this position, run:")
-				fmt.Println(formatResumeCommand(verboseFlag, paranoidInterval, profile, encodedState, bucket, key))
+				fmt.Println(formatResumeCommand(verbose, paranoidInterval, profile, encodedState, bucket, key))
 				fmt.Println()
 				fmt.Println("Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
@@ -262,7 +262,7 @@ func main() {
 			}
 			os.Exit(1)
 		}
-		if paranoidInterval != 0 || verboseFlag {
+		if paranoidInterval != 0 || verbose {
 			fmt.Println()
 		}
 

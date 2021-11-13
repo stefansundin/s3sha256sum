@@ -46,9 +46,9 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(verboseFlag bool, paranoidInterval time.Duration, profile, encodedState, bucket, key string) string {
+func formatResumeCommand(verbose bool, paranoidInterval time.Duration, profile, encodedState, bucket, key string) string {
 	cmd := []string{os.Args[0]}
-	if verboseFlag {
+	if verbose {
 		cmd = append(cmd, "-verbose")
 	}
 	if paranoidInterval != 0 {
