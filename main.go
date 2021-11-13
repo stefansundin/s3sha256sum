@@ -36,13 +36,14 @@ func init() {
 func main() {
 	var paranoidInterval time.Duration
 	var profile, resume, endpointURL, caBundle string
-	var noVerifySsl, debug, verbose, versionFlag bool
+	var noVerifySsl, noSignRequest, debug, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.StringVar(&endpointURL, "endpoint-url", "", "Override the S3 endpoint URL (for use with S3 compatible APIs).")
 	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
 	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
+	flag.BoolVar(&noSignRequest, "no-sign-request", false, "Do not sign requests.")
 	flag.BoolVar(&debug, "debug", false, "Turn on debug logging.")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose output.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
@@ -182,6 +183,9 @@ func main() {
 	}
 	client := s3.NewFromConfig(cfg,
 		func(o *s3.Options) {
+			if noSignRequest {
+				o.Credentials = aws.AnonymousCredentials{}
+			}
 			if endpointURL != "" {
 				o.EndpointResolver = s3.EndpointResolverFromURL(endpointURL)
 				o.UsePathStyle = true

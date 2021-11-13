@@ -30,6 +30,8 @@ Parameters:
     	Turn on debug logging.
   -endpoint-url string
     	Override the S3 endpoint URL (for use with S3 compatible APIs).
+  -no-sign-request
+    	Do not sign requests.
   -no-verify-ssl
     	Do not verify SSL certificates.
   -paranoid duration
