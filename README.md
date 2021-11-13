@@ -13,7 +13,7 @@ For the paranoid, s3sha256sum also has an option that prints the status on an in
 Precompiled binaries will be provided at a later date. For now you can install using `go install`:
 
 ```
-$ go install github.com/stefansundin/s3sha256sum@latest
+go install github.com/stefansundin/s3sha256sum@latest
 ```
 
 ## Usage
