@@ -26,6 +26,8 @@ S3Uri must have the format s3://<bucketname>/<key>.
 Parameters:
   -ca-bundle string
     	The CA certificate bundle to use when verifying SSL certificates.
+  -debug
+    	Turn on debug logging.
   -endpoint-url string
     	Override the S3 endpoint URL (for use with S3 compatible APIs).
   -no-verify-ssl

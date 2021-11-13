@@ -36,13 +36,14 @@ func init() {
 func main() {
 	var paranoidInterval time.Duration
 	var profile, resume, endpointURL, caBundle string
-	var noVerifySsl, verbose, versionFlag bool
+	var noVerifySsl, debug, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.StringVar(&endpointURL, "endpoint-url", "", "Override the S3 endpoint URL (for use with S3 compatible APIs).")
 	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
 	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
+	flag.BoolVar(&debug, "debug", false, "Turn on debug logging.")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose output.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Usage = func() {
@@ -164,6 +165,10 @@ func main() {
 			if noVerifySsl {
 				o.HTTPClient = &http.Client{Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+			}
+			if debug {
+				var lm aws.ClientLogMode = aws.LogRequest | aws.LogResponse
+				o.ClientLogMode = &lm
 			}
 			return nil
 		},
