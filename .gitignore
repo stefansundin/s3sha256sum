@@ -6,4 +6,5 @@ Thumbs.db
 
 /vendor
 s3sha256sum
+s3sha256sum.exe
 SHA256SUMS
