@@ -101,6 +101,7 @@ func main() {
 	// This feels a bit unsafe but haven't had any problems in my testing
 	var bucket, key string
 	var obj *s3.GetObjectOutput
+	var objLength uint64
 	copying := false
 	if paranoidInterval != 0 {
 		go func() {
@@ -124,7 +125,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, endpointURL, caBundle, encodedState, bucket, key))
 			}
 		}()
 	}
@@ -242,6 +243,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+		objLength = position + uint64(obj.ContentLength)
 
 		// Compute the sha256 hash
 		// The body is streamed so it is computing while the object is being downloaded
@@ -260,7 +262,7 @@ func main() {
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
 				position := hashGetLen(h)
-				fmt.Printf("Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(uint64(obj.ContentLength)), 100*float64(position)/float64(obj.ContentLength))
+				fmt.Printf("Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength))
 				fmt.Println()
 				fmt.Println("To resume hashing from this position, run:")
 				fmt.Println(formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, endpointURL, caBundle, encodedState, bucket, key))
