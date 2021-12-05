@@ -180,7 +180,7 @@ func main() {
 			return nil
 		},
 		config.WithAssumeRoleCredentialOptions(func(o *stscreds.AssumeRoleOptions) {
-			o.TokenProvider = stscreds.StdinTokenProvider
+			o.TokenProvider = mfaTokenProvider
 		}),
 	)
 	if err != nil {

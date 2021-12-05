@@ -125,3 +125,24 @@ func normalizeBucketLocation(loc s3Types.BucketLocationConstraint) string {
 	}
 	return string(loc)
 }
+
+func isNumeric(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func mfaTokenProvider() (string, error) {
+	for {
+		fmt.Printf("Assume Role MFA token code: ")
+		var code string
+		_, err := fmt.Scanln(&code)
+		if len(code) == 6 && isNumeric(code) {
+			return code, err
+		}
+		fmt.Println("Code must consist of 6 digits. Please try again.")
+	}
+}
