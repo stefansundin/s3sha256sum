@@ -46,7 +46,7 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, paranoidInterval time.Duration, profile, endpointURL, caBundle, encodedState, bucket, key string) string {
+func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, paranoidInterval time.Duration, profile, region, endpointURL, caBundle, encodedState, bucket, key string) string {
 	cmd := []string{os.Args[0]}
 	if verbose {
 		cmd = append(cmd, "-verbose")
@@ -65,6 +65,9 @@ func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, parano
 	}
 	if profile != "" {
 		cmd = append(cmd, "-profile", profile)
+	}
+	if region != "" {
+		cmd = append(cmd, "-region", region)
 	}
 	if endpointURL != "" {
 		cmd = append(cmd, "-endpoint-url", endpointURL)

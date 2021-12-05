@@ -38,6 +38,8 @@ Parameters:
     	Print status and hash state on an interval. (e.g. "10s")
   -profile string
     	Use a specific profile from your credential file.
+  -region string
+    	The region to use. Overrides config/env settings. Avoids one API call.
   -resume string
     	Provide a hash state to resume from a specific position.
   -verbose

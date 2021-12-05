@@ -35,10 +35,11 @@ func init() {
 
 func main() {
 	var paranoidInterval time.Duration
-	var profile, resume, endpointURL, caBundle string
+	var profile, region, resume, endpointURL, caBundle string
 	var noVerifySsl, noSignRequest, debug, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
+	flag.StringVar(&region, "region", "", "The region to use. Overrides config/env settings. Avoids one API call.")
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.StringVar(&endpointURL, "endpoint-url", "", "Override the S3 endpoint URL. (for use with S3 compatible APIs)")
 	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
@@ -125,7 +126,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
 			}
 		}()
 	}
@@ -192,6 +193,9 @@ func main() {
 			if noSignRequest {
 				o.Credentials = aws.AnonymousCredentials{}
 			}
+			if region != "" {
+				o.Region = region
+			}
 			if endpointURL != "" {
 				o.EndpointResolver = s3.EndpointResolverFromURL(endpointURL)
 				o.UsePathStyle = true
@@ -215,7 +219,7 @@ func main() {
 
 		// Create an S3 client for the region
 		regionalClient := client
-		if endpointURL == "" {
+		if endpointURL == "" && region == "" {
 			// Get the bucket location
 			if bucketLocations[bucket] == "" {
 				bucketLocationOutput, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
@@ -270,7 +274,7 @@ func main() {
 				fmt.Printf("Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength))
 				fmt.Println()
 				fmt.Println("To resume hashing from this position, run:")
-				fmt.Println(formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Println(formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
 				fmt.Println()
 				fmt.Println("Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
