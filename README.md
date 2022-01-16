@@ -18,12 +18,6 @@ If you prefer to compile from source (or to use unreleased features), you can in
 go install github.com/stefansundin/s3sha256sum@latest
 ```
 
-There is a branch that uses hardware accelerated sha256 instructions. You can install it with:
-
-```
-go install github.com/stefansundin/s3sha256sum@sha256-simd
-```
-
 ## Usage
 
 ```
