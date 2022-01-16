@@ -6,7 +6,10 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.10.0
 	github.com/aws/aws-sdk-go-v2/config v1.9.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.17.0
+	github.com/minio/sha256-simd v1.0.0
 )
+
+require github.com/klauspost/cpuid/v2 v2.0.4 // indirect
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.5.0
