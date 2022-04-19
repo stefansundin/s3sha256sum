@@ -50,7 +50,7 @@ func main() {
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "s3sha256sum version %s\n", version)
-		fmt.Fprintln(os.Stderr, "Copyright (C) 2021 Stefan Sundin")
+		fmt.Fprintln(os.Stderr, "Copyright (C) 2022 Stefan Sundin")
 		fmt.Fprintln(os.Stderr, "Website: https://github.com/stefansundin/s3sha256sum")
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "s3sha256sum comes with ABSOLUTELY NO WARRANTY.")
@@ -94,8 +94,8 @@ func main() {
 			os.Exit(1)
 		}
 		position = hashGetLen(h)
-		fmt.Printf("Resuming from position %s.\n", formatFilesize(position))
-		fmt.Println()
+		fmt.Fprintf(os.Stderr, "Resuming from position %s.\n", formatFilesize(position))
+		fmt.Fprintln(os.Stderr)
 	}
 
 	// If paranoid, start the go routine that runs in the background
@@ -126,7 +126,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Printf("To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
 			}
 		}()
 	}
@@ -144,7 +144,7 @@ func main() {
 			if interrupted {
 				os.Exit(1)
 			}
-			fmt.Println("\nInterrupt received.")
+			fmt.Fprintln(os.Stderr, "\nInterrupt received.")
 			interrupted = true
 			cancel()
 		}
@@ -238,7 +238,11 @@ func main() {
 
 		// Get the object
 		if verbose {
-			fmt.Printf("Getting s3://%s/%s\n", bucket, key)
+			fmt.Fprintf(os.Stderr, "Getting s3://%s/%s", bucket, key)
+			if region != "" {
+				fmt.Fprintf(os.Stderr, " from %s", region)
+			}
+			fmt.Fprintln(os.Stderr)
 		}
 		input := &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
@@ -264,26 +268,26 @@ func main() {
 		copying = false
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
+				position := hashGetLen(h)
+				fmt.Fprintf(os.Stderr, "Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength))
+				fmt.Fprintln(os.Stderr)
 				state, err := hashMarshalBinary(h)
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				position := hashGetLen(h)
-				fmt.Printf("Aborted after %s out of %s (%2.1f%%).\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength))
-				fmt.Println()
-				fmt.Println("To resume hashing from this position, run:")
-				fmt.Println(formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
-				fmt.Println()
-				fmt.Println("Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
+				fmt.Fprintln(os.Stderr, "To resume hashing from this position, run:")
+				fmt.Fprintln(os.Stderr, formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Fprintln(os.Stderr)
+				fmt.Fprintln(os.Stderr, "Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
 				fmt.Fprintln(os.Stderr, err)
 			}
 			os.Exit(1)
 		}
 		if paranoidInterval != 0 || verbose {
-			fmt.Println()
+			fmt.Fprintln(os.Stderr)
 		}
 
 		// Print the sum
@@ -315,13 +319,11 @@ func main() {
 		}
 		if objSum == "" {
 			fmt.Println("Metadata 'sha256sum' not present. Populate this metadata (or tag) to enable automatic comparison.")
+		} else if strings.EqualFold(sum, objSum) {
+			fmt.Printf("OK (matches object %s)\n", objSumSource)
 		} else {
-			if strings.EqualFold(sum, objSum) {
-				fmt.Printf("OK (matches object %s)\n", objSumSource)
-			} else {
-				fmt.Printf("FAILED (did not match object %s)\n", objSumSource)
-				fmt.Printf("Expected: %s\n", objSum)
-			}
+			fmt.Printf("FAILED (did not match object %s)\n", objSumSource)
+			fmt.Printf("Expected: %s\n", objSum)
 		}
 	}
 }
