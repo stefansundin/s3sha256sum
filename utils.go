@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
@@ -44,40 +43,15 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, paranoidInterval time.Duration, profile, region, endpointURL, caBundle, versionId, encodedState, bucket, key string) string {
-	cmd := []string{os.Args[0]}
-	if verbose {
-		cmd = append(cmd, "-verbose")
+func formatResumeCommand(encodedState string) string {
+	cmd := []string{os.Args[0], "-resume", encodedState}
+	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "-resume" {
+			i++
+			continue
+		}
+		cmd = append(cmd, os.Args[i])
 	}
-	if debug {
-		cmd = append(cmd, "-debug")
-	}
-	if noSignRequest {
-		cmd = append(cmd, "-no-sign-request")
-	}
-	if noVerifySsl {
-		cmd = append(cmd, "-no-verify-ssl")
-	}
-	if paranoidInterval != 0 {
-		cmd = append(cmd, "-paranoid", fmt.Sprint(paranoidInterval))
-	}
-	if profile != "" {
-		cmd = append(cmd, "-profile", profile)
-	}
-	if region != "" {
-		cmd = append(cmd, "-region", region)
-	}
-	if endpointURL != "" {
-		cmd = append(cmd, "-endpoint-url", endpointURL)
-	}
-	if caBundle != "" {
-		cmd = append(cmd, "-ca-bundle", caBundle)
-	}
-	if versionId != "" {
-		cmd = append(cmd, "-version-id", versionId)
-	}
-	cmd = append(cmd, "-resume", encodedState)
-	cmd = append(cmd, "s3://"+bucket+"/"+key)
 	return strings.Join(cmd, " ")
 }
 

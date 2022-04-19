@@ -127,7 +127,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, versionId, encodedState, bucket, key))
+				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(encodedState))
 			}
 		}()
 	}
@@ -282,7 +282,7 @@ func main() {
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
 				fmt.Fprintln(os.Stderr, "To resume hashing from this position, run:")
-				fmt.Fprintln(os.Stderr, formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, versionId, encodedState, bucket, key))
+				fmt.Fprintln(os.Stderr, formatResumeCommand(encodedState))
 				fmt.Fprintln(os.Stderr)
 				fmt.Fprintln(os.Stderr, "Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
