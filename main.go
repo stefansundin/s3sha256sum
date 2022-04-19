@@ -78,6 +78,15 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Validate that all positional arguments are formatted correctly
+	for _, arg := range flag.Args() {
+		bucket, key := parseS3Uri(arg)
+		if bucket == "" || key == "" {
+			fmt.Fprintln(os.Stderr, "Error: The S3Uri must have the format s3://<bucketname>/<key>")
+			os.Exit(1)
+		}
+	}
+
 	// Decode the resume state
 	var h hash.Hash
 	var position uint64
@@ -217,10 +226,6 @@ func main() {
 		}
 
 		bucket, key := parseS3Uri(arg)
-		if bucket == "" || key == "" {
-			fmt.Fprintln(os.Stderr, "Error: The S3Uri must have the format s3://<bucketname>/<key>")
-			os.Exit(1)
-		}
 
 		// Create an S3 client for the region
 		regionalClient := client
