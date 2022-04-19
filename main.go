@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 const version = "0.0.1"
@@ -35,7 +36,7 @@ func init() {
 
 func main() {
 	var paranoidInterval time.Duration
-	var profile, region, resume, endpointURL, caBundle, versionId, expectedBucketOwner string
+	var profile, region, resume, endpointURL, caBundle, versionId, expectedBucketOwner, requestPayer string
 	var noVerifySsl, noSignRequest, debug, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
@@ -45,6 +46,7 @@ func main() {
 	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
 	flag.StringVar(&versionId, "version-id", "", "Version ID used to reference a specific version of the S3 object.")
 	flag.StringVar(&expectedBucketOwner, "expected-bucket-owner", "", "The account ID of the expected bucket owner.")
+	flag.StringVar(&requestPayer, "request-payer", "", "Confirms that the requester knows that they will be charged for the requests. Possible values: requester.")
 	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
 	flag.BoolVar(&noSignRequest, "no-sign-request", false, "Do not sign requests.")
 	flag.BoolVar(&debug, "debug", false, "Turn on debug logging.")
@@ -257,6 +259,9 @@ func main() {
 		if expectedBucketOwner != "" {
 			input.ExpectedBucketOwner = aws.String(expectedBucketOwner)
 		}
+		if requestPayer != "" {
+			input.RequestPayer = s3Types.RequestPayer(requestPayer)
+		}
 		if position != 0 {
 			input.Range = aws.String(fmt.Sprintf("bytes=%d-", position))
 		}
@@ -318,6 +323,9 @@ func main() {
 			}
 			if expectedBucketOwner != "" {
 				getObjectTaggingInput.ExpectedBucketOwner = aws.String(expectedBucketOwner)
+			}
+			if requestPayer != "" {
+				getObjectTaggingInput.RequestPayer = s3Types.RequestPayer(requestPayer)
 			}
 			tags, err := regionalClient.GetObjectTagging(ctx, getObjectTaggingInput)
 			if err != nil {

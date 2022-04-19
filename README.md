@@ -42,6 +42,8 @@ Parameters:
     	Use a specific profile from your credential file.
   -region string
     	The region to use. Overrides config/env settings. Avoids one API call.
+  -request-payer string
+    	Confirms that the requester knows that they will be charged for the requests. Possible values: requester.
   -resume string
     	Provide a hash state to resume from a specific position.
   -verbose
