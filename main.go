@@ -101,7 +101,7 @@ func main() {
 
 	// If paranoid, start the go routine that runs in the background
 	// This feels a bit unsafe but haven't had any problems in my testing
-	var bucket, key string
+	var arg string
 	var obj *s3.GetObjectOutput
 	var objLength uint64
 	copying := false
@@ -127,7 +127,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(encodedState))
+				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(encodedState, arg))
 			}
 		}()
 	}
@@ -207,12 +207,13 @@ func main() {
 	bucketLocations := make(map[string]string)
 
 	// Loop the provided arguments
-	for i, arg := range flag.Args() {
+	var i int
+	for i, arg = range flag.Args() {
 		if i != 0 {
 			fmt.Println()
 		}
 
-		bucket, key = parseS3Uri(arg)
+		bucket, key := parseS3Uri(arg)
 		if bucket == "" || key == "" {
 			fmt.Fprintln(os.Stderr, "Error: The S3Uri must have the format s3://<bucketname>/<key>")
 			os.Exit(1)
@@ -282,7 +283,7 @@ func main() {
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
 				fmt.Fprintln(os.Stderr, "To resume hashing from this position, run:")
-				fmt.Fprintln(os.Stderr, formatResumeCommand(encodedState))
+				fmt.Fprintln(os.Stderr, formatResumeCommand(encodedState, arg))
 				fmt.Fprintln(os.Stderr)
 				fmt.Fprintln(os.Stderr, "Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {

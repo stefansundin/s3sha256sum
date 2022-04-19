@@ -43,15 +43,19 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(encodedState string) string {
+func formatResumeCommand(encodedState, arg string) string {
 	cmd := []string{os.Args[0], "-resume", encodedState}
 	for i := 1; i < len(os.Args); i++ {
 		if os.Args[i] == "-resume" {
 			i++
 			continue
 		}
+		if strings.HasPrefix(os.Args[i], "s3://") {
+			continue
+		}
 		cmd = append(cmd, os.Args[i])
 	}
+	cmd = append(cmd, arg)
 	return strings.Join(cmd, " ")
 }
 
