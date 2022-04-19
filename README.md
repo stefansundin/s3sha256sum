@@ -46,6 +46,8 @@ Parameters:
     	Verbose output.
   -version
     	Print version number.
+  -version-id string
+    	Version ID used to reference a specific version of the S3 object.
 ```
 
 You can also set environment variables that [aws-sdk-go-v2](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/config#EnvConfig) automatically consumes:

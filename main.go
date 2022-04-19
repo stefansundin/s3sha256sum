@@ -35,7 +35,7 @@ func init() {
 
 func main() {
 	var paranoidInterval time.Duration
-	var profile, region, resume, endpointURL, caBundle string
+	var profile, region, resume, endpointURL, caBundle, versionId string
 	var noVerifySsl, noSignRequest, debug, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
@@ -43,6 +43,7 @@ func main() {
 	flag.StringVar(&resume, "resume", "", "Provide a hash state to resume from a specific position.")
 	flag.StringVar(&endpointURL, "endpoint-url", "", "Override the S3 endpoint URL. (for use with S3 compatible APIs)")
 	flag.StringVar(&caBundle, "ca-bundle", "", "The CA certificate bundle to use when verifying SSL certificates.")
+	flag.StringVar(&versionId, "version-id", "", "Version ID used to reference a specific version of the S3 object.")
 	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
 	flag.BoolVar(&noSignRequest, "no-sign-request", false, "Do not sign requests.")
 	flag.BoolVar(&debug, "debug", false, "Turn on debug logging.")
@@ -126,7 +127,7 @@ func main() {
 					continue
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
-				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, versionId, encodedState, bucket, key))
 			}
 		}()
 	}
@@ -248,6 +249,9 @@ func main() {
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		}
+		if versionId != "" {
+			input.VersionId = aws.String(versionId)
+		}
 		if position != 0 {
 			input.Range = aws.String(fmt.Sprintf("bytes=%d-", position))
 		}
@@ -278,7 +282,7 @@ func main() {
 				}
 				encodedState := base64.StdEncoding.EncodeToString(state)
 				fmt.Fprintln(os.Stderr, "To resume hashing from this position, run:")
-				fmt.Fprintln(os.Stderr, formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, encodedState, bucket, key))
+				fmt.Fprintln(os.Stderr, formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl, paranoidInterval, profile, region, endpointURL, caBundle, versionId, encodedState, bucket, key))
 				fmt.Fprintln(os.Stderr)
 				fmt.Fprintln(os.Stderr, "Note: This value is the internal state of the hash function. It may not be compatible across versions of s3sha256sum or across Go versions.")
 			} else {
@@ -300,10 +304,14 @@ func main() {
 		objSumSource := "metadata"
 		if objSum == "" && obj.TagCount > 0 {
 			// No metadata entry, check if there's a tag
-			tags, err := regionalClient.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{
+			getObjectTaggingInput := &s3.GetObjectTaggingInput{
 				Bucket: aws.String(bucket),
 				Key:    aws.String(key),
-			})
+			}
+			if versionId != "" {
+				getObjectTaggingInput.VersionId = aws.String(versionId)
+			}
+			tags, err := regionalClient.GetObjectTagging(ctx, getObjectTaggingInput)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Was not able to get object tags (looking for 'sha256sum' tag to compare against).")
 				fmt.Fprintln(os.Stderr, err)

@@ -44,7 +44,7 @@ func formatFilesize(size uint64) string {
 	}
 }
 
-func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, paranoidInterval time.Duration, profile, region, endpointURL, caBundle, encodedState, bucket, key string) string {
+func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, paranoidInterval time.Duration, profile, region, endpointURL, caBundle, versionId, encodedState, bucket, key string) string {
 	cmd := []string{os.Args[0]}
 	if verbose {
 		cmd = append(cmd, "-verbose")
@@ -72,6 +72,9 @@ func formatResumeCommand(verbose, debug, noSignRequest, noVerifySsl bool, parano
 	}
 	if caBundle != "" {
 		cmd = append(cmd, "-ca-bundle", caBundle)
+	}
+	if versionId != "" {
+		cmd = append(cmd, "-version-id", versionId)
 	}
 	cmd = append(cmd, "-resume", encodedState)
 	cmd = append(cmd, "s3://"+bucket+"/"+key)
