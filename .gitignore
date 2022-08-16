@@ -5,6 +5,7 @@ Thumbs.db
 .~lock.*
 
 /vendor
+/release
 s3sha256sum
 s3sha256sum.exe
 SHA256SUMS
