@@ -26,7 +26,7 @@ import (
 	flag "github.com/stefansundin/go-zflag"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func init() {
 	// Do not fail if a region is not specified anywhere
