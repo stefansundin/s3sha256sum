@@ -44,9 +44,9 @@ func formatFilesize(size uint64) string {
 }
 
 func formatResumeCommand(encodedState, arg string) string {
-	cmd := []string{os.Args[0], "-resume", encodedState}
+	cmd := []string{os.Args[0], "--resume", encodedState}
 	for i := 1; i < len(os.Args); i++ {
-		if os.Args[i] == "-resume" {
+		if os.Args[i] == "--resume" {
 			i++
 			continue
 		}

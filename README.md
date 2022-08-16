@@ -21,43 +21,27 @@ go install github.com/stefansundin/s3sha256sum@latest
 ## Usage
 
 ```
-$ s3sha256sum -help
+$ s3sha256sum --help
 Usage: s3sha256sum [parameters] <S3Uri> [S3Uri]...
 S3Uri must have the format s3://<bucketname>/<key>.
 
 Parameters:
-  -ca-bundle string
-    	The CA certificate bundle to use when verifying SSL certificates.
-  -debug
-    	Turn on debug logging.
-  -endpoint-url string
-    	Override the S3 endpoint URL. (for use with S3 compatible APIs)
-  -expected-bucket-owner string
-    	The account ID of the expected bucket owner.
-  -no-sign-request
-    	Do not sign requests.
-  -no-verify-ssl
-    	Do not verify SSL certificates.
-  -paranoid duration
-    	Print status and hash state on an interval. (e.g. "10s")
-  -profile string
-    	Use a specific profile from your credential file.
-  -region string
-    	The region to use. Overrides config/env settings. Avoids one API call.
-  -request-payer string
-    	Confirms that the requester knows that they will be charged for the requests. Possible values: requester.
-  -resume string
-    	Provide a hash state to resume from a specific position.
-  -use-accelerate-endpoint
-    	Use S3 Transfer Acceleration.
-  -use-path-style
-    	Use S3 Path Style.
-  -verbose
-    	Verbose output.
-  -version
-    	Print version number.
-  -version-id string
-    	Version ID used to reference a specific version of the S3 object.
+      --ca-bundle string               The CA certificate bundle to use when verifying SSL certificates.
+      --debug                          Turn on debug logging.
+      --endpoint-url string            Override the S3 endpoint URL. (for use with S3 compatible APIs)
+      --expected-bucket-owner string   The account ID of the expected bucket owner.
+      --no-sign-request                Do not sign requests.
+      --no-verify-ssl                  Do not verify SSL certificates.
+      --paranoid duration              Print status and hash state on an interval. (e.g. "10s")
+      --profile string                 Use a specific profile from your credential file.
+      --region string                  The region to use. Overrides config/env settings. Avoids one API call.
+      --request-payer string           Confirms that the requester knows that they will be charged for the requests. Possible values: requester.
+      --resume string                  Provide a hash state to resume from a specific position.
+      --use-accelerate-endpoint        Use S3 Transfer Acceleration.
+      --use-path-style                 Use S3 Path Style.
+      --verbose                        Verbose output.
+      --version                        Print version number.
+      --version-id string              Version ID used to reference a specific version of the S3 object.
 ```
 
 You can also set environment variables that [aws-sdk-go-v2](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/config#EnvConfig) automatically consumes:

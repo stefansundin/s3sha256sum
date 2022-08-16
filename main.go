@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"hash"
 	"io"
@@ -24,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	flag "github.com/stefansundin/go-zflag"
 )
 
 const version = "0.1.0"
@@ -76,10 +76,11 @@ func main() {
 	if versionFlag {
 		fmt.Println(version)
 		os.Exit(0)
-	}
-	if flag.NArg() == 0 {
+	} else if flag.NArg() == 0 {
 		flag.Usage()
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, "Error: At least one S3Uri parameter is required!")
+		os.Exit(1)
 	}
 
 	if endpointURL != "" {
