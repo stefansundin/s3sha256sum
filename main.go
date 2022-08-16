@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -37,7 +39,7 @@ func init() {
 func main() {
 	var paranoidInterval time.Duration
 	var profile, region, resume, endpointURL, caBundle, versionId, expectedBucketOwner, requestPayer string
-	var noVerifySsl, noSignRequest, debug, verbose, versionFlag bool
+	var noVerifySsl, noSignRequest, useAccelerateEndpoint, usePathStyle, debug, verbose, versionFlag bool
 	flag.DurationVar(&paranoidInterval, "paranoid", 0, "Print status and hash state on an interval. (e.g. \"10s\")")
 	flag.StringVar(&profile, "profile", "", "Use a specific profile from your credential file.")
 	flag.StringVar(&region, "region", "", "The region to use. Overrides config/env settings. Avoids one API call.")
@@ -49,6 +51,8 @@ func main() {
 	flag.StringVar(&requestPayer, "request-payer", "", "Confirms that the requester knows that they will be charged for the requests. Possible values: requester.")
 	flag.BoolVar(&noVerifySsl, "no-verify-ssl", false, "Do not verify SSL certificates.")
 	flag.BoolVar(&noSignRequest, "no-sign-request", false, "Do not sign requests.")
+	flag.BoolVar(&useAccelerateEndpoint, "use-accelerate-endpoint", false, "Use S3 Transfer Acceleration.")
+	flag.BoolVar(&usePathStyle, "use-path-style", false, "Use S3 Path Style.")
 	flag.BoolVar(&debug, "debug", false, "Turn on debug logging.")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose output.")
 	flag.BoolVar(&versionFlag, "version", false, "Print version number.")
@@ -76,6 +80,29 @@ func main() {
 	if flag.NArg() == 0 {
 		flag.Usage()
 		os.Exit(0)
+	}
+
+	if endpointURL != "" {
+		if !strings.HasPrefix(endpointURL, "http://") && !strings.HasPrefix(endpointURL, "https://") {
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, "Error: The endpoint URL must start with http:// or https://.")
+			os.Exit(1)
+		}
+		if !usePathStyle {
+			u, err := url.Parse(endpointURL)
+			if err != nil {
+				fmt.Fprintln(os.Stderr)
+				fmt.Fprintln(os.Stderr, "Error: Unable to parse the endpoint URL.")
+				os.Exit(1)
+			}
+			hostname := u.Hostname()
+			if hostname == "localhost" || net.ParseIP(hostname) != nil {
+				if debug || verbose {
+					fmt.Fprintln(os.Stderr, "Detected IP address in endpoint URL. Implicitly opting in to path style.")
+				}
+				usePathStyle = true
+			}
+		}
 	}
 
 	// Validate that all positional arguments are formatted correctly
@@ -211,7 +238,12 @@ func main() {
 			}
 			if endpointURL != "" {
 				o.EndpointResolver = s3.EndpointResolverFromURL(endpointURL)
+			}
+			if usePathStyle {
 				o.UsePathStyle = true
+			}
+			if useAccelerateEndpoint {
+				o.UseAccelerate = true
 			}
 		})
 
@@ -243,6 +275,12 @@ func main() {
 			}
 			regionalClient = s3.NewFromConfig(cfg, func(o *s3.Options) {
 				o.Region = bucketLocations[bucket]
+				if usePathStyle {
+					o.UsePathStyle = true
+				}
+				if useAccelerateEndpoint {
+					o.UseAccelerate = true
+				}
 			})
 		}
 

@@ -46,6 +46,10 @@ Parameters:
     	Confirms that the requester knows that they will be charged for the requests. Possible values: requester.
   -resume string
     	Provide a hash state to resume from a specific position.
+  -use-accelerate-endpoint
+    	Use S3 Transfer Acceleration.
+  -use-path-style
+    	Use S3 Path Style.
   -verbose
     	Verbose output.
   -version
