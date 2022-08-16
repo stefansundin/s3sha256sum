@@ -10,7 +10,9 @@ For the paranoid, s3sha256sum also has an option that prints the status on an in
 
 ## Installation
 
-Precompiled binaries will be provided at a later date. For now you can install using `go install`:
+You can download precompiled binaries [from the releases section](https://github.com/stefansundin/s3sha256sum/releases/latest).
+
+If you prefer to compile from source (or to use unreleased features), you can install using `go install`:
 
 ```
 go install github.com/stefansundin/s3sha256sum@latest

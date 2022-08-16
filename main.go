@@ -26,7 +26,7 @@ import (
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-const version = "0.0.1"
+const version = "0.1.0"
 
 func init() {
 	// Do not fail if a region is not specified anywhere
