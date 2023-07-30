@@ -123,7 +123,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "You can only resume hashing a single object.")
 			os.Exit(1)
 		}
-		state, err := base64.StdEncoding.DecodeString(resume)
+		state, err := base64.RawStdEncoding.DecodeString(resume)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -166,7 +166,7 @@ func main() {
 				if state == nil {
 					continue
 				}
-				encodedState := base64.StdEncoding.EncodeToString(state)
+				encodedState := base64.RawStdEncoding.EncodeToString(state)
 				fmt.Fprintf(os.Stderr, "To resume hashing from %s out of %s (%2.1f%%), run: %s\n", formatFilesize(position), formatFilesize(objLength), 100*float64(position)/float64(objLength), formatResumeCommand(encodedState, arg))
 			}
 		}()
@@ -334,7 +334,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
 				}
-				encodedState := base64.StdEncoding.EncodeToString(state)
+				encodedState := base64.RawStdEncoding.EncodeToString(state)
 				fmt.Fprintln(os.Stderr, "To resume hashing from this position, run:")
 				fmt.Fprintln(os.Stderr, formatResumeCommand(encodedState, arg))
 				fmt.Fprintln(os.Stderr)
