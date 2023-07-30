@@ -125,13 +125,13 @@ func main() {
 		}
 		state, err := base64.RawStdEncoding.DecodeString(resume)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintf(os.Stderr, "Error decoding the resume state: %v\n", err)
 			os.Exit(1)
 		}
 		h = sha256.New()
 		err = hashUnmarshalBinary(&h, state)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintf(os.Stderr, "Error unmarshaling the resume state: %v\n", err)
 			os.Exit(1)
 		}
 		position = hashGetLen(h)
@@ -160,7 +160,7 @@ func main() {
 				lastPosition = position
 				state, err := hashMarshalBinary(h)
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+					fmt.Fprintf(os.Stderr, "Error marshaling the resume state: %v\n", err)
 					os.Exit(1)
 				}
 				if state == nil {
@@ -201,7 +201,7 @@ func main() {
 			if caBundle != "" {
 				f, err := os.Open(caBundle)
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+					fmt.Fprintf(os.Stderr, "Error opening the CA bundle: %v\n", err)
 					os.Exit(1)
 				}
 				o.CustomCABundle = f
@@ -226,7 +226,7 @@ func main() {
 		}),
 	)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "Error initializing the AWS SDK: %v\n", err)
 		os.Exit(1)
 	}
 	client := s3.NewFromConfig(cfg,
@@ -269,7 +269,8 @@ func main() {
 					Bucket: aws.String(bucket),
 				})
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+					fmt.Fprintf(os.Stderr, "Error getting bucket region: %v\n", err)
+					fmt.Fprintln(os.Stderr, "Try adding --region.")
 					os.Exit(1)
 				}
 				bucketLocations[bucket] = normalizeBucketLocation(bucketLocationOutput.LocationConstraint)
@@ -331,7 +332,7 @@ func main() {
 				fmt.Fprintln(os.Stderr)
 				state, err := hashMarshalBinary(h)
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+					fmt.Fprintf(os.Stderr, "Error marshaling the resume state: %v\n", err)
 					os.Exit(1)
 				}
 				encodedState := base64.RawStdEncoding.EncodeToString(state)
