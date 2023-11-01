@@ -88,3 +88,14 @@ func mfaTokenProvider() (string, error) {
 		fmt.Println("Code must consist of 6 digits. Please try again.")
 	}
 }
+
+func fletcher8(data []byte) byte {
+	var p1, p2 byte
+	for _, b := range data {
+		p1 += b
+		p2 += p1
+		p1 = p1 % 255
+		p2 = p2 % 255
+	}
+	return (p1 ^ p2)
+}
