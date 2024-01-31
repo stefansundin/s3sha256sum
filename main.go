@@ -315,7 +315,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		objLength = position + uint64(obj.ContentLength)
+		objLength = position + uint64(aws.ToInt64(obj.ContentLength))
 
 		// Compute the sha256 hash
 		// The body is streamed so it is computing while the object is being downloaded
@@ -357,7 +357,7 @@ func main() {
 		// Compare with the object metadata if possible
 		objSum := obj.Metadata["sha256sum"]
 		objSumSource := "metadata"
-		if objSum == "" && obj.TagCount > 0 {
+		if objSum == "" && aws.ToInt32(obj.TagCount) > 0 {
 			// No metadata entry, check if there's a tag
 			getObjectTaggingInput := &s3.GetObjectTaggingInput{
 				Bucket: aws.String(bucket),
@@ -379,8 +379,8 @@ func main() {
 				os.Exit(1)
 			}
 			for _, t := range tags.TagSet {
-				if *t.Key == "sha256sum" {
-					objSum = *t.Value
+				if aws.ToString(t.Key) == "sha256sum" {
+					objSum = aws.ToString(t.Value)
 					objSumSource = "tag"
 					break
 				}
