@@ -238,7 +238,7 @@ func main() {
 				o.Region = region
 			}
 			if endpointURL != "" {
-				o.EndpointResolver = s3.EndpointResolverFromURL(endpointURL)
+				o.BaseEndpoint = aws.String(endpointURL)
 			}
 			if usePathStyle {
 				o.UsePathStyle = true
