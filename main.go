@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/minio/sha256-simd"
+	s3autoregion "github.com/stefansundin/aws-sdk-go-v2-s3autoregion"
 	flag "github.com/stefansundin/go-zflag"
 )
 
@@ -206,15 +207,6 @@ func main() {
 				}
 				o.CustomCABundle = f
 			}
-			if noVerifySsl {
-				o.HTTPClient = &http.Client{
-					Transport: &http.Transport{
-						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: true,
-						},
-					},
-				}
-			}
 			if debug {
 				var lm aws.ClientLogMode = aws.LogRequest | aws.LogResponse
 				o.ClientLogMode = &lm
@@ -229,7 +221,17 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error initializing the AWS SDK: %v\n", err)
 		os.Exit(1)
 	}
-	client := s3.NewFromConfig(cfg,
+	client := s3autoregion.NewFromConfig(cfg,
+		&s3autoregion.ExtendedOptions{
+			CacheSize: 50,
+			TransportOptionsFn: func(t *http.Transport) {
+				if noVerifySsl {
+					t.TLSClientConfig = &tls.Config{
+						InsecureSkipVerify: true,
+					}
+				}
+			},
+		},
 		func(o *s3.Options) {
 			if noSignRequest {
 				o.Credentials = aws.AnonymousCredentials{}
@@ -248,9 +250,6 @@ func main() {
 			}
 		})
 
-	// Cache bucket locations to avoid extra calls
-	bucketLocations := make(map[string]string)
-
 	// Loop the provided arguments
 	var i int
 	for i, arg = range flag.Args() {
@@ -259,32 +258,6 @@ func main() {
 		}
 
 		bucket, key := parseS3Uri(arg)
-
-		// Create an S3 client for the region
-		regionalClient := client
-		if endpointURL == "" && region == "" {
-			// Get the bucket location
-			if bucketLocations[bucket] == "" {
-				bucketLocationOutput, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-					Bucket: aws.String(bucket),
-				})
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error getting bucket region: %v\n", err)
-					fmt.Fprintln(os.Stderr, "Try adding --region.")
-					os.Exit(1)
-				}
-				bucketLocations[bucket] = normalizeBucketLocation(bucketLocationOutput.LocationConstraint)
-			}
-			regionalClient = s3.NewFromConfig(cfg, func(o *s3.Options) {
-				o.Region = bucketLocations[bucket]
-				if usePathStyle {
-					o.UsePathStyle = true
-				}
-				if useAccelerateEndpoint {
-					o.UseAccelerate = true
-				}
-			})
-		}
 
 		// Get the object
 		if verbose {
@@ -310,7 +283,7 @@ func main() {
 		if position != 0 {
 			input.Range = aws.String(fmt.Sprintf("bytes=%d-", position))
 		}
-		obj, err = regionalClient.GetObject(ctx, input)
+		obj, err = client.GetObject(ctx, input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -372,7 +345,7 @@ func main() {
 			if requestPayer != "" {
 				getObjectTaggingInput.RequestPayer = s3Types.RequestPayer(requestPayer)
 			}
-			tags, err := regionalClient.GetObjectTagging(ctx, getObjectTaggingInput)
+			tags, err := client.GetObjectTagging(ctx, getObjectTaggingInput)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Was not able to get object tags (looking for 'sha256sum' tag to compare against).")
 				fmt.Fprintln(os.Stderr, err)
